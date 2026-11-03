@@ -51,6 +51,12 @@ The big data never travels to KMS; KMS only wraps/unwraps the small **data key**
 
 **Decision rule:** "AWS must not be able to access the keys" / "FIPS 140-2 Level 3" / "dedicated hardware" → **CloudHSM**. Everything else — integration, audit, low cost, ease → **KMS**.
 
+### The missing middle: KMS custom key stores
+
+**KMS integration AND your own HSM key material?** → **KMS key in a CloudHSM custom key store**. KMS keeps its familiar API and service integrations; key material stays in a **CloudHSM cluster you control**. You can disconnect the key store or independently manage the HSM, making those keys unavailable without waiting for KMS key deletion. You also get **CloudHSM audit logs**, independent of CloudTrail. Higher cost and operational burden than ordinary KMS.
+
+**THE trap:** **AWS-owned** and **AWS-managed** keys do **not** live in *your* CloudHSM custom key store. Ordinary KMS key deletion still takes **7–30 days**. A custom key store is different from *CloudHSM alone*: KMS remains the AWS-service integration point.
+
 ## Question patterns
 
 > *"Security team must audit every use of an encryption key."* → **KMS + CloudTrail** (every key use is logged — KMS's superpower).
@@ -71,6 +77,8 @@ The big data never travels to KMS; KMS only wraps/unwraps the small **data key**
 
 > *"User has full IAM KMS permissions but still gets AccessDenied on a key."* → **Key policy doesn't allow them — BOTH key policy and IAM must permit**.
 
+> *"AWS service integration, but we must control HSM key material and audit independently."* → **KMS + CloudHSM custom key store**, not AWS-owned keys or CloudHSM alone.
+
 ## Pocket card
 
 | Keyword | Answer |
@@ -86,5 +94,6 @@ The big data never travels to KMS; KMS only wraps/unwraps the small **data key**
 | "AWS cannot see keys" / dedicated hardware | CloudHSM |
 | SSL offload / own CA | CloudHSM |
 | Access needs key policy AND IAM | Both must allow |
+| KMS integrations + customer-controlled HSM material | **CloudHSM custom key store** |
 
 You now hold the keys — next, the safes where applications keep their passwords: Secrets Manager and Parameter Store.
