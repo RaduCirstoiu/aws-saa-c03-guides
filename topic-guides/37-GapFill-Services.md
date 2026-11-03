@@ -76,7 +76,9 @@ THE trap: "streaming" alone → Kinesis; but "**Kafka**" named explicitly → **
 
 THE trap: scanned invoice/form extraction → **Textract**, not Rekognition (images ≠ documents) and not Comprehend (that's meaning, not extraction).
 
-**Kinesis Video Streams** — **ingest/store live video streams** from cameras or devices; **Rekognition Video** analyzes video and **SNS** can alert via SMS. Signal: *\"surveillance camera feed → analyze people/objects → text security team\"*. **THE trap:** Kinesis **Data** Streams is for generic streaming records; Kinesis **Video** Streams handles video media. **App2Container** just containerizes existing apps; **SageMaker Autopilot** automates model-building — neither is the managed camera-ingestion pipeline.\n\n## Systems Manager (SSM) suite
+**Kinesis Video Streams** — **ingest/store live video streams** from cameras or devices; **Rekognition Video** analyzes video and **SNS** can alert via SMS. Signal: *\"surveillance camera feed → analyze people/objects → text security team\"*. **THE trap:** Kinesis **Data** Streams is for generic streaming records; Kinesis **Video** Streams handles video media. **App2Container** just containerizes existing apps; **SageMaker Autopilot** automates model-building — neither is the managed camera-ingestion pipeline.
+
+## Systems Manager (SSM) suite
 
 One service, several exam-favorite features:
 
@@ -155,7 +157,8 @@ One service, several exam-favorite features:
 | BI dashboards | QuickSight |
 | Data lake + fine-grained access | Lake Formation |
 | SaaS → S3 | AppFlow |
-| Images/video analysis | Rekognition |\n| Live camera ingestion → video analysis → SMS | Kinesis Video Streams + Rekognition + SNS |
+| Images/video analysis | Rekognition |
+| Live camera ingestion → video analysis → SMS | Kinesis Video Streams + Rekognition + SNS |
 | Speech → text / text → speech | Transcribe / Polly |
 | Sentiment | Comprehend |
 | Scanned forms/invoices | Textract |
