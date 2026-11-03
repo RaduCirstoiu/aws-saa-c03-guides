@@ -103,6 +103,8 @@ One service, several exam-favorite features:
 
 **AWS Artifact** — self-service portal to download **AWS compliance reports** (SOC, PCI, ISO). Signal: *"auditors need proof of AWS's compliance."* No agents, no config — just the download counter for paperwork.
 
+**Glue ETL ≠ Glue crawler.** A **crawler discovers schema/catalog metadata**; a **Glue ETL job transforms the bytes** (e.g., **2 GB CSV → Parquet**). For *"on every S3 upload"*, send **S3 Object Created → EventBridge → Glue job/workflow**. Lambda can transform small files, but its **15-minute limit** makes large ETL riskier; **Transfer Family/SFTP** is for file-transfer protocols, not S3-to-S3 conversion.
+
 ## Question patterns
 
 > *"Existing on-prem app uses RabbitMQ with AMQP; migrate with minimal code changes"* → **Amazon MQ** (protocol keywords = MQ; SQS would mean rewriting)
@@ -128,6 +130,8 @@ One service, several exam-favorite features:
 > *"Shell access to private instances without SSH keys or bastion hosts"* → **SSM Session Manager** (no port 22, fully audited)
 
 > *"Migrate Oracle to Aurora PostgreSQL"* → **DMS + SCT** (different engines = heterogeneous = add the Schema Conversion Tool)
+
+> *"Convert large CSV files to Parquet after each S3 upload, minimal operations."* → **S3 Object Created → EventBridge → Glue ETL**, not a crawler alone or Lambda + SFTP.
 
 ## Pocket card
 
@@ -167,5 +171,6 @@ One service, several exam-favorite features:
 | Instant prod DB copy for testing | Aurora cloning |
 | Distributed tracing | X-Ray |
 | Compliance reports for auditors | AWS Artifact |
+| S3 upload → large CSV-to-Parquet conversion | **EventBridge → Glue ETL** (crawler only catalogs) |
 
 That's the last jar on the spice rack — you've now covered the whole SAA-C03 kitchen. Sleep well, read the last sentence first, and go collect your certificate.
