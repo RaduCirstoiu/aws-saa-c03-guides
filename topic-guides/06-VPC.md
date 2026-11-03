@@ -93,7 +93,51 @@ Normally, a private instance calling S3 would go out through NAT → internet �
 - *"Private EC2 needs to reach S3, cheapest / most secure way"* → **Gateway Endpoint**, NOT a NAT Gateway. (NAT charges per GB; Gateway Endpoints are free.) This question is practically guaranteed.
 - Because Interface Endpoints work across peering/TGW/VPN, the **centralized endpoints pattern** puts them in one shared VPC for many VPCs to use. And yes — an **S3 *interface* endpoint exists** specifically for the *"on-premises servers need private S3 access"* case, since the Gateway one can't be reached from on-prem.
 
-**Endpoint policy vs bucket policy:** the **VPC endpoint policy** says *which buckets/objects may be reached through THIS endpoint*; the **S3 bucket policy** says *which principals/networks/endpoints may touch THIS bucket*. Want to limit **destinations available via an S3 gateway endpoint**? Put an endpoint policy on it. Want to reject bucket access unless requests come from a specific endpoint? Use a bucket policy with `aws:SourceVpce`. Both can apply; neither magically grants access when IAM/resource policies deny it.
+### VPC endpoint policies — permissions at the private doorway
+
+An **endpoint policy** is an **IAM-style resource policy attached to the endpoint**, not to EC2 or S3. It controls **which principals, actions, and destination resources may use THIS endpoint**. The default policy allows `Principal: "*", Action: "*", Resource: "*"` — so the endpoint itself adds no restriction unless you customize it.
+
+Three independent checkpoints for an EC2 role reading S3:
+
+```
+EC2 role ─── IAM identity policy ───► S3 gateway endpoint ─── endpoint policy ───► S3 bucket
+            "May I GetObject?"       "May GetObject pass to this bucket?"         bucket policy: "May I accept this request?"
+```
+
+**THE trap:** **an endpoint policy does NOT grant S3 permissions by itself** and does not override IAM or bucket policies. An explicit Deny in any applicable policy wins. Endpoint policies are supported by **gateway and many interface endpoints**, but not every endpoint service supports custom policies.
+
+**Concrete example:** only allow listing and reading objects in `company-reports` **through this S3 gateway endpoint**:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": "*",
+    "Action": ["s3:ListBucket", "s3:GetObject"],
+    "Resource": [
+      "arn:aws:s3:::company-reports",
+      "arn:aws:s3:::company-reports/*"
+    ]
+  }]
+}
+```
+
+Everything else through **this endpoint** is implicitly denied. `ListBucket` uses the **bucket ARN**, `GetObject` uses the **object ARN** (`/*`). Gateway endpoint policies require `Principal: "*"`; restrict a particular role with a condition on `aws:PrincipalArn`. The role still needs S3 permissions.
+
+**Endpoint policy vs S3 bucket policy:**
+
+| Requirement | Where | Why |
+|---|---|---|
+| Only bucket A may be accessed **through endpoint X** | **Endpoint policy** on X | Restricts destinations that this doorway permits |
+| Bucket A must be accessible **only through endpoint X** | **Bucket policy** on A with Deny unless `aws:SourceVpce = vpce-...` | Restricts every route into the bucket, not just X |
+| Bucket A must be accessed **only from VPC Y** | **Bucket policy** with `aws:SourceVpc` | Restricts request origin; not the endpoint's destinations |
+
+**Gotcha:** an endpoint policy limits only requests that **actually traverse that endpoint**. It doesn't stop the same IAM principal using a different network path to S3 if other permissions/network access allow it. For a bucket-wide guarantee, use a **bucket policy with an explicit Deny** outside the intended VPC endpoint (and be careful: this can block console access).
+
+**Exam signal:** *"Limit which S3 buckets instances can reach through a gateway endpoint"* → **endpoint policy**. *"Reject access to this S3 bucket unless requests come through vpce-123"* → **bucket policy**.
+
+Official docs: [Endpoint policies](https://docs.aws.amazon.com/vpc/latest/privatelink/vpc-endpoints-access.html) · [S3 gateway endpoint examples](https://docs.aws.amazon.com/vpc/latest/privatelink/vpc-endpoints-s3.html) · [Bucket restrictions by endpoint](https://docs.aws.amazon.com/AmazonS3/latest/userguide/example-bucket-policies-vpc-endpoint.html).
 
 ## Connecting VPCs: three very different tools
 
@@ -169,7 +213,8 @@ Quick chooser: **2–3 VPCs, full network access → Peering. Many VPCs + VPN/DX
 | NAT instance fix | Disable source/dest check |
 | IPv6 outbound-only | Egress-only IGW |
 | IPv4 pool exhausted; launch without private IPv4 | IPv6-only **subnet** (VPC has IPv6 CIDR) |
-| Restrict S3 buckets reachable through gateway endpoint | Endpoint policy (vs bucket policy on destination) |
+| Restrict S3 buckets reachable through gateway endpoint | Endpoint policy (which destinations through this doorway) |
+| Force S3 bucket access through one endpoint | Bucket policy + `aws:SourceVpce` explicit Deny |
 | Reserved IPs per subnet | 5 |
 | VPC CIDR size | /16 to /28 |
 | Block a specific IP | NACL (deny) |
