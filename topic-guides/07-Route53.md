@@ -44,7 +44,9 @@ Alias records point at ALBs, CloudFront distributions, S3 static websites, API G
 
 **THE trap:** *"point the root domain `example.com` at an ALB"* → **Alias record, never CNAME** (CNAME is illegal at the apex) **and never a plain A record** (the ALB's IPs change). Root domain + AWS resource = **Alias**. Every time.
 
-**S3 static website trap:** for a direct Route 53 alias to an **S3 website endpoint**, the **bucket name must exactly match the DNS record name** (e.g., `www.example.com` → bucket `www.example.com`), and static website hosting must be enabled. Use the website endpoint, **not** the S3 REST API endpoint. **CORS** governs browser cross-origin requests; it does **not** fix a DNS/bucket-name mismatch. A Route 53 hosted zone is global, so there is no *\"same Region as the hosted zone\"* requirement. For HTTPS on a custom domain, usually put **CloudFront** in front of S3.\n\n## Hosted zones
+**S3 static website trap:** for a direct Route 53 alias to an **S3 website endpoint**, the **bucket name must exactly match the DNS record name** (e.g., `www.example.com` → bucket `www.example.com`), and static website hosting must be enabled. Use the website endpoint, **not** the S3 REST API endpoint. **CORS** governs browser cross-origin requests; it does **not** fix a DNS/bucket-name mismatch. A Route 53 hosted zone is global, so there is no *\"same Region as the hosted zone\"* requirement. For HTTPS on a custom domain, usually put **CloudFront** in front of S3.
+
+## Hosted zones
 
 A **hosted zone** is a container for all the DNS records of one domain.
 
@@ -116,7 +118,8 @@ One neat corollary: if your DR design is **a single instance per region**, there
 
 | Keyword in question | Answer |
 |---|---|
-| Root/apex domain → ALB/CloudFront/S3 | **Alias record** |\n| Direct alias to S3 static website | Bucket name = DNS record name; website hosting enabled |
+| Root/apex domain → ALB/CloudFront/S3 | **Alias record** |
+| Direct alias to S3 static website | Bucket name = DNS record name; website hosting enabled |
 | name → name, NOT at apex | CNAME |
 | "A/B test", "10% canary" | **Weighted** |
 | "best performance", "lowest latency" | **Latency** |
