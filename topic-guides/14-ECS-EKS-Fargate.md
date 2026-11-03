@@ -83,6 +83,12 @@ Hook: **Execution = getting the container up. Task Role = what the app does once
 | Classic web app, "just deploy my code" | Elastic Beanstalk |
 | Full OS control, custom everything | EC2 |
 
+### EKS Secrets: which vault are we encrypting?
+
+**Kubernetes `Secret` objects live in the EKS control plane's `etcd`**. **KMS envelope encryption** protects those API objects *before they're stored*; **Secrets Manager** is a **different, external store** for application secrets. Putting a password in Secrets Manager does **not** automatically encrypt a Kubernetes `Secret` object in etcd. EBS CSI volume encryption protects volumes, **not etcd**.
+
+**2026 reality check:** EKS clusters on **Kubernetes 1.28+ already envelope-encrypt all Kubernetes API data by default** using an **AWS-owned KMS key**; you can opt for a **customer-managed KMS key**. Older practice questions may still ask you to *enable* EKS Secrets encryption (that procedure applies to EKS 1.27 and older). Separate the **exam's intended service distinction** from today's default.
+
 ## Question patterns
 
 > *"Run containers without managing any servers or clusters of instances"* → **Fargate** (the phrase "no server management" is the trigger)
@@ -95,6 +101,8 @@ Hook: **Execution = getting the container up. Task Role = what the app does once
 > *"Avoid vendor lock-in / portable across clouds"* → **EKS** (Kubernetes is the portability play)
 > *"Cost-optimize fault-tolerant containerized batch jobs on Fargate"* → **Fargate Spot** (interruptible = Spot)
 > *"Scale container count based on messages waiting in a queue"* → **ECS Service Auto Scaling on SQS queue depth**
+
+> *"Encrypt Kubernetes Secrets in EKS etcd, not just store passwords externally."* → **EKS/KMS envelope encryption** (already the default on EKS 1.28+), **not Secrets Manager**.
 
 ## Pocket card
 
@@ -111,5 +119,6 @@ Hook: **Execution = getting the container up. Task Role = what the app does once
 | Per-task ENI + security group | awsvpc mode |
 | Cheap interruptible Fargate | Fargate Spot |
 | Multiple same-service tasks, one instance | ALB dynamic port mapping |
+| Kubernetes Secrets encrypted in EKS etcd | **KMS envelope encryption** (default on 1.28+) |
 
 Once your containers are running, the next question is: what if you don't even want to think about containers — you just want to hand AWS your code? That's Elastic Beanstalk, up next.

@@ -78,6 +78,13 @@ Because every node plugs into the **same shared storage**, a failed writer is re
 
 RPO (Recovery Point Objective) = how much data you may lose; RTO (Recovery Time Objective) = how long until you're back. Aurora Global Database's "~1s / <1min" pair is a memorize-it number.
 
+### Three Aurora details that look like RDS trivia (but cost points)
+
+- **Custom endpoints**: writer endpoint → current writer; reader endpoint → all eligible readers; **custom endpoint → a chosen subset of DB instances** (e.g., powerful replicas for production reads, smaller replicas for reports). A custom endpoint does **not** make a replica writable.
+- **Aurora Auto Scaling**: adds/removes **Aurora Replicas** based on a target metric. *"Read traffic spikes; don't overpay for readers at night"* → Auto Scaling, not a larger writer or Global Database.
+- **Row changes ≠ RDS events**: RDS event subscriptions report **DB/service events**, not individual `INSERT`/`DELETE` rows. **Aurora MySQL** can call `lambda_async` / `lambda_sync` from SQL, including triggers → Lambda → SQS. Real production CDC may need an outbox/CDC pipeline for reliable delivery.
+- **Enhanced Monitoring** (RDS) → OS/process-level CPU and memory, unlike regular CloudWatch `CPUUtilization` (instance aggregate). Don't confuse it with the **CloudWatch agent on EC2**.
+
 ## Question patterns
 
 > *"Database must survive an AZ failure with no manual intervention"* → **Multi-AZ** ("survive failure" + "automatic" = spare tire, 60–120s DNS flip).
@@ -100,6 +107,14 @@ RPO (Recovery Point Objective) = how much data you may lose; RTO (Recovery Time 
 
 > *"Application needs OS-level access / a custom database engine"* → **EC2** (or RDS Custom for Oracle/SQL Server) — plain RDS gives no OS access.
 
+> *"Route reports to small Aurora replicas and production reads to large ones."* → **Aurora custom endpoints** (specific instance subsets, not the default reader endpoint).
+
+> *"Aurora read replica can't keep up during peaks, but costs must stay low."* → **Aurora Auto Scaling** (reader count, not writer size).
+
+> *"Publish an event every time an Aurora MySQL row is deleted."* → **Aurora MySQL native Lambda invocation**, not RDS event subscriptions.
+
+> *"Show CPU and memory by process on an RDS instance."* → **Enhanced Monitoring**, not CloudWatch `CPUUtilization`.
+
 ## Pocket card
 
 | Keyword in question | Answer |
@@ -119,5 +134,9 @@ RPO (Recovery Point Objective) = how much data you may lose; RTO (Recovery Time 
 | cross-region DR, RPO ~1s, RTO <1min | **Aurora Global Database** |
 | instant prod copy for staging | **Aurora Cloning** |
 | undo mistake fast, no restore | **Aurora Backtrack** |
+| production vs reporting on different Aurora instance sizes | **Custom endpoints** (selected DB instances) |
+| automatically add/remove Aurora readers | **Aurora Auto Scaling** |
+| Aurora MySQL row event → queue | **Native Lambda invocation → SQS** (not RDS events) |
+| RDS process-level CPU/memory | **Enhanced Monitoring** |
 
 You now know how to keep the database standing and fast — but when the exam's read traffic is the *same* hot data thousands of times per second, even fifteen replicas is the wrong answer, and that's where caching with ElastiCache takes over.

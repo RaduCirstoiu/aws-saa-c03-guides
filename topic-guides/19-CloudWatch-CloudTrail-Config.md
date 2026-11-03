@@ -51,6 +51,8 @@ Question verb          →  Service
 
 **X-Ray one-liner:** distributed **tracing** across microservices — follows one request through every hop. *"Which microservice adds the latency?"* → **X-Ray** (not CloudWatch — CloudWatch tells you *a* service is slow; X-Ray tells you *which hop* in the request chain).
 
+**EC2 vs RDS OS metrics — THE trap:** EC2's default metrics don't include memory or filesystem **space used** → install **CloudWatch agent**. RDS aggregate CPU is visible in CloudWatch, but **per-process CPU/memory** → enable **RDS Enhanced Monitoring** (managed OS details). EBS disk I/O metrics are not filesystem utilization. There is no "EC2 Enhanced Monitoring" switch.
+
 ## Question patterns
 
 > *"Determine who terminated a production EC2 instance last week."* → **CloudTrail** (API audit = who did what).
@@ -73,6 +75,8 @@ Question verb          →  Service
 
 > *"Prevent anyone in the org from disabling CloudTrail."* → **SCP** (Config detects; SCP prevents).
 
+> *"Which RDS process is consuming CPU or RAM?"* → **RDS Enhanced Monitoring**, not ordinary CloudWatch CPU metrics or an EC2 agent.
+
 ## Pocket card
 
 | Keyword | Answer |
@@ -92,5 +96,6 @@ Question verb          →  Service
 | Auto-fix noncompliance | Config + SSM remediation |
 | PREVENT actions | SCP (never Config) |
 | Trace across microservices | X-Ray |
+| RDS per-process CPU / memory | **RDS Enhanced Monitoring** (not EC2 agent) |
 
 Now you know who's watching the house — next comes who holds the keys: KMS and CloudHSM.

@@ -67,6 +67,8 @@ Both run code at CloudFront edge locations; the split is muscle vs speed:
 
 Rule: *needs external calls or real logic* → **Lambda@Edge**; *trivial header/URL tweak on every request* → **CloudFront Functions**.
 
+**Environment-variable encryption trap:** Lambda encrypts environment variables **at rest by default**. A **customer-managed KMS key + console encryption helpers** adds client-side protection if *"other developers must not see plaintext values"*. For rotatable DB/API credentials, **Secrets Manager** with tightly scoped IAM is usually the better production choice. Default at-rest encryption alone is not a secret-access policy.
+
 ## Question patterns
 
 > *"90-minute video transcoding job — can it run on Lambda?"* → **No — AWS Batch / Fargate** (15-minute hard limit; Step Functions only if divisible into <15-min steps)
@@ -80,6 +82,8 @@ Rule: *needs external calls or real logic* → **Lambda@Edge**; *trivial header/
 > *"Rewrite URLs or add security headers on millions of requests, cheapest"* → **CloudFront Functions** (sub-ms, ~1/6 price, no network)
 > *"Asynchronously invoked function fails and events disappear"* → **DLQ / on-failure destination** (async retries twice, then drops)
 > *"Lambda should process SQS messages"* → **Event Source Mapping** (Lambda pulls in batches; failures return to the queue)
+
+> *"Lambda env vars are encrypted, but developers viewing configuration must not see secrets."* → **Customer-managed KMS key + encryption helpers** (Secrets Manager for real secret lifecycle).
 
 ## Pocket card
 
@@ -102,5 +106,6 @@ Rule: *needs external calls or real logic* → **Lambda@Edge**; *trivial header/
 | Edge + network calls / JWT | Lambda@Edge |
 | Edge header/URL tweak, cheapest | CloudFront Functions |
 | Max runtime / memory / concurrency | 15 min / 10 GB / 1,000 default |
+| hide Lambda env vars from console viewers | **KMS key + encryption helpers** (consider Secrets Manager) |
 
 Lambda is the glue of every serverless diagram you've built so far — CloudFront to API Gateway to Lambda to DynamoDB — and with these four sections you now own that entire stack end to end.
