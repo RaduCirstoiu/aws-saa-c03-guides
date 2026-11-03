@@ -58,7 +58,7 @@ CIDR (Classless Inter-Domain Routing) notation like `10.0.0.0/16` means "the fir
 - **AWS reserves 5 IP addresses in every subnet** (network, router, DNS, future, broadcast) — a /24 gives you 251 usable, not 256.
 - **No-overlap rule**: VPCs you want to connect (peering, TGW, VPN to on-prem) must have **non-overlapping CIDRs**. Plan ranges up front; you can't peer 10.0.0.0/16 with 10.0.0.0/16.
 
-## The two guards: Security Groups vs NACLs
+### IPv6-only subnets — escape IPv4 exhaustion\n\n**IPv6-only is a SUBNET setting, not a switch that disables IPv4 for an entire VPC.** Associate an IPv6 CIDR with the VPC, create an **IPv6-only subnet**, and launch compatible instances there without consuming private IPv4 addresses. Existing IPv4 subnets don't magically convert. **THE trap:** *\"disable IPv4 on the VPC\"* isn't the solution to exhausted subnet IPv4 addresses. An **egress-only IGW** solves outbound IPv6 connectivity — it does **not** make a subnet IPv6-only.\n\n## The two guards: Security Groups vs NACLs
 
 Two firewalls, different posts, different memories:
 
@@ -89,7 +89,7 @@ Normally, a private instance calling S3 would go out through NAT → internet �
 - *"Private EC2 needs to reach S3, cheapest / most secure way"* → **Gateway Endpoint**, NOT a NAT Gateway. (NAT charges per GB; Gateway Endpoints are free.) This question is practically guaranteed.
 - Because Interface Endpoints work across peering/TGW/VPN, the **centralized endpoints pattern** puts them in one shared VPC for many VPCs to use. And yes — an **S3 *interface* endpoint exists** specifically for the *"on-premises servers need private S3 access"* case, since the Gateway one can't be reached from on-prem.
 
-## Connecting VPCs: three very different tools
+**Endpoint policy vs bucket policy:** the **VPC endpoint policy** says *which buckets/objects may be reached through THIS endpoint*; the **S3 bucket policy** says *which principals/networks/endpoints may touch THIS bucket*. Want to limit **destinations available via an S3 gateway endpoint**? Put an endpoint policy on it. Want to reject bucket access unless requests come from a specific endpoint? Use a bucket policy with `aws:SourceVpce`. Both can apply; neither magically grants access when IAM/resource policies deny it.\n\n## Connecting VPCs: three very different tools
 
 ### VPC Peering — a 1:1 cable
 
@@ -161,7 +161,7 @@ Quick chooser: **2–3 VPCs, full network access → Peering. Many VPCs + VPN/DX
 | Outbound-only internet for private subnet | NAT Gateway (in a public subnet) |
 | NAT high availability | One NAT Gateway per AZ |
 | NAT instance fix | Disable source/dest check |
-| IPv6 outbound-only | Egress-only IGW |
+| IPv6 outbound-only | Egress-only IGW |\n| IPv4 pool exhausted; launch without private IPv4 | IPv6-only **subnet** (VPC has IPv6 CIDR) |\n| Restrict S3 buckets reachable through gateway endpoint | Endpoint policy (vs bucket policy on destination) |
 | Reserved IPs per subnet | 5 |
 | VPC CIDR size | /16 to /28 |
 | Block a specific IP | NACL (deny) |
