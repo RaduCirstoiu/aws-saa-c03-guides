@@ -6,9 +6,28 @@ Here's a physics problem AWS can't engineer away: **bandwidth**. Try to upload 1
 
 **Rule of thumb the exam loves:** if transferring over the network would take **more than about a week**, consider **physical transfer**. For **new customers**, AWS no longer offers Snow Family devices to order — **Data Transfer Terminal** is the current AWS physical-transfer answer where available. Snow device scenarios remain worth recognizing as legacy exam material.
 
-Historically, the Snow family meant AWS ships the disks **to you**. The new alternative flips the trip: with **Data Transfer Terminal, YOU bring the disks to AWS's facility**.\n\nThe second superpower: Snow devices carry **compute**. They can run EC2 instances and Lambda functions on-board, which means you can process data at places with no internet at all — ships at sea, mines, military bases, remote research stations. That's "edge computing."
+Historically, the Snow family meant AWS ships the disks **to you**. The new alternative flips the trip: with **Data Transfer Terminal, YOU bring the disks to AWS's facility**.
 
-## The current choice: Data Transfer Terminal\n\n**AWS Data Transfer Terminal** is a **real, secure, physical facility** with high-bandwidth AWS connectivity. Reserve a slot in the console, **bring your own portable storage devices** to the site, connect them, and upload to AWS (including S3). It is **not** a software endpoint or an office network upgrade. Think *drive your disks to AWS's upload room*.\n\n| Requirement | Answer |\n|---|---|\n| One-time 80–250 TB import; office internet far too slow; **physical facility is an option** | **Data Transfer Terminal** — bring disks to the terminal |\n| On-prem network needs **ongoing dedicated** high-throughput connectivity | **Direct Connect** — install a connection to your site |\n| Online file migration/sync over **existing** network | **DataSync** — still limited by available bandwidth |\n| AWS ships a box **to your site** and you return it | **Snowball Edge** — historical/existing-customer pattern, **not available to new customers** |\n\n**THE trap:** *Data Transfer Terminal* doesn't sound like a physical shipment, but **you physically travel with the data**. Direct Connect is a persistent network link, **not** the quick one-time physical-import answer. Also check real-world constraints: terminal locations are limited and, at present, AWS requires **Enterprise Support** for access.\n\nAWS says **no Snow Family devices can be newly ordered by new customers**; existing Snowball Edge customers are unaffected. For edge compute, AWS suggests evaluating **Outposts**. Don't blindly apply the old *\">1 week = order Snowball\"* shortcut to a 2026 scenario.\n\nSources: [AWS Snowball availability change](https://docs.aws.amazon.com/snowball/latest/developer-guide/snowball-edge-availability-change.html) · [Data Transfer Terminal FAQ](https://aws.amazon.com/data-transfer-terminal/faqs/) · [Data Transfer Terminal guide](https://docs.aws.amazon.com/datatransferterminal/latest/userguide/what-is-dtt.html).\n\n## The device lineup (legacy / existing customers)
+The second superpower: Snow devices carry **compute**. They can run EC2 instances and Lambda functions on-board, which means you can process data at places with no internet at all — ships at sea, mines, military bases, remote research stations. That's "edge computing."
+
+## The current choice: Data Transfer Terminal
+
+**AWS Data Transfer Terminal** is a **real, secure, physical facility** with high-bandwidth AWS connectivity. Reserve a slot in the console, **bring your own portable storage devices** to the site, connect them, and upload to AWS (including S3). It is **not** a software endpoint or an office network upgrade. Think *drive your disks to AWS's upload room*.
+
+| Requirement | Answer |
+|---|---|
+| One-time 80–250 TB import; office internet far too slow; **physical facility is an option** | **Data Transfer Terminal** — bring disks to the terminal |
+| On-prem network needs **ongoing dedicated** high-throughput connectivity | **Direct Connect** — install a connection to your site |
+| Online file migration/sync over **existing** network | **DataSync** — still limited by available bandwidth |
+| AWS ships a box **to your site** and you return it | **Snowball Edge** — historical/existing-customer pattern, **not available to new customers** |
+
+**THE trap:** *Data Transfer Terminal* doesn't sound like a physical shipment, but **you physically travel with the data**. Direct Connect is a persistent network link, **not** the quick one-time physical-import answer. Also check real-world constraints: terminal locations are limited and, at present, AWS requires **Enterprise Support** for access.
+
+AWS says **no Snow Family devices can be newly ordered by new customers**; existing Snowball Edge customers are unaffected. For edge compute, AWS suggests evaluating **Outposts**. Don't blindly apply the old *\">1 week = order Snowball\"* shortcut to a 2026 scenario.
+
+Sources: [AWS Snowball availability change](https://docs.aws.amazon.com/snowball/latest/developer-guide/snowball-edge-availability-change.html) · [Data Transfer Terminal FAQ](https://aws.amazon.com/data-transfer-terminal/faqs/) · [Data Transfer Terminal guide](https://docs.aws.amazon.com/datatransferterminal/latest/userguide/what-is-dtt.html).
+
+## The device lineup (legacy / existing customers)
 
 | Device | Capacity | When |
 |---|---|---|
@@ -54,7 +73,9 @@ THE trap: **Snowball cannot import directly into S3 Glacier.** Data always lands
 
 | Keyword | Answer |
 |---|---|
-| One-time huge upload; can bring drives to AWS facility | **Data Transfer Terminal** |\n| Snow Family availability for new customers | **No new orders** — prefer DataSync (online), Data Transfer Terminal (physical), partners |\n| Transfer would take > 1 week | Consider physical transfer; don't automatically order Snow |
+| One-time huge upload; can bring drives to AWS facility | **Data Transfer Terminal** |
+| Snow Family availability for new customers | **No new orders** — prefer DataSync (online), Data Transfer Terminal (physical), partners |
+| Transfer would take > 1 week | Consider physical transfer; don't automatically order Snow |
 | 8–14 TB, tiny/rugged/edge | Snowcone |
 | 50–500 TB migration via shipped AWS devices (legacy) | Snowball Edge Storage Optimized |
 | Process data offline / GPU at edge | Snowball Edge Compute Optimized |
