@@ -75,11 +75,11 @@ Ask yourself: does the scenario care about *speed* or about *where the user phys
 
 ## Active-active vs active-passive DNS failover
 
-**Active-active** = every healthy region serves users. Use **Weighted, Latency, or another health-aware policy** (not the Failover policy). Example: Frankfurt 50, Virginia 50, each with a health check. Both healthy → roughly 50/50 DNS answers; Frankfurt unhealthy → only Virginia is eligible; Frankfurt recovers → 50/50 again. **Weights stay 50/50**: Route 53 excludes the unhealthy record rather than rewriting weights.
+**Active-active** = every healthy region serves users. Use **any appropriate health-aware policy other than Failover**: Weighted, Latency, Geolocation, Geoproximity, or Multivalue. Health/fallback behavior varies by policy. Example: Frankfurt 50, Virginia 50, each with a health check. Both healthy → roughly 50/50 DNS answers; Frankfurt unhealthy → only Virginia is eligible; Frankfurt recovers → 50/50 again. **Weights stay 50/50**: Route 53 excludes the unhealthy record rather than rewriting weights.
 
 **Active-passive** = primary serves users; standby waits. Use the **Failover** policy with PRIMARY and SECONDARY records. A weighted 100/0 setup can also mimic standby behavior, but the 0-weight record is considered only when **all** nonzero-weight records are unhealthy.
 
-**THE trap:** *"All regions/resources available most of the time; stop answering with unhealthy ones"* → **active-active + weighted/latency + health checks**, not primary/secondary Failover. *"Standby DR site"* → **active-passive + Failover**.
+**THE trap:** *"All regions/resources available most of the time; stop answering with unhealthy ones"* → **active-active + suitable health-aware routing**, not primary/secondary Failover. Choose **Weighted** for fixed proportions, **Latency** for fastest Region, **Geoproximity** for proximity/bias, **Geolocation** for location rules (configure applicable fallback records). *"Standby DR site"* → **active-passive + Failover**. *"Standby DR site"* → **active-passive + Failover**.
 
 **Partial failure:** Route 53 evaluates a **record's endpoint health**, not a region's remaining capacity. If one EC2 behind a regional ALB fails but healthy targets remain, the ALB removes that target while Route 53 can keep the region in its 50/50 DNS distribution. For ALB alias records, enable **Evaluate Target Health**. Route 53 does **not** automatically reweight a degraded-but-healthy region by surviving instance count.
 
@@ -110,7 +110,7 @@ One neat corollary: if your DR design is **a single instance per region**, there
 
 > *"Point the apex/root domain example.com at an Application Load Balancer"* → **Alias record** (CNAME is forbidden at the apex; Alias is the AWS answer, free and auto-tracking).
 
-> *"All regions serve traffic; unhealthy region stops receiving new DNS answers"* → **active-active Weighted/Latency + health checks**.
+> *"All regions serve traffic; unhealthy region stops receiving new DNS answers"* → **active-active with a suitable health-aware policy** (Weighted, Latency, Geoproximity, etc.).
 
 > *"Active-passive setup: send traffic to the standby region only when the primary fails"* → **Failover routing policy + health check** ("active-passive" is the giveaway).
 
@@ -136,7 +136,7 @@ One neat corollary: if your DR design is **a single instance per region**, there
 | name → name, NOT at apex | CNAME |
 | "A/B test", "10% canary" | **Weighted** |
 | "best performance", "lowest latency" | **Latency** |
-| "active-active", "all healthy regions serve" | **Weighted/Latency** + health checks |
+| "active-active", "all healthy regions serve" | **Health-aware policy other than Failover** (Weighted/Latency/Geoproximity/etc.) |
 | "active-passive", "DR site" | **Failover** + health check |
 | "users in country X get X content", compliance | **Geolocation** (+ Default record) |
 | "bias", "shift traffic share between regions" | **Geoproximity** |
