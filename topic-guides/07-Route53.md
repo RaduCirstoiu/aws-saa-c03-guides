@@ -73,6 +73,20 @@ Ask yourself: does the scenario care about *speed* or about *where the user phys
 
 **Geoproximity's name tag:** if the question says **"bias"** or talks about **expanding one region's share of traffic** by turning a dial, that's Geoproximity. Geolocation has no dial; Geoproximity is all dial.
 
+## Active-active vs active-passive DNS failover
+
+**Active-active** = every healthy region serves users. Use **Weighted, Latency, or another health-aware policy** (not the Failover policy). Example: Frankfurt 50, Virginia 50, each with a health check. Both healthy → roughly 50/50 DNS answers; Frankfurt unhealthy → only Virginia is eligible; Frankfurt recovers → 50/50 again. **Weights stay 50/50**: Route 53 excludes the unhealthy record rather than rewriting weights.
+
+**Active-passive** = primary serves users; standby waits. Use the **Failover** policy with PRIMARY and SECONDARY records. A weighted 100/0 setup can also mimic standby behavior, but the 0-weight record is considered only when **all** nonzero-weight records are unhealthy.
+
+**THE trap:** *"All regions/resources available most of the time; stop answering with unhealthy ones"* → **active-active + weighted/latency + health checks**, not primary/secondary Failover. *"Standby DR site"* → **active-passive + Failover**.
+
+**Partial failure:** Route 53 evaluates a **record's endpoint health**, not a region's remaining capacity. If one EC2 behind a regional ALB fails but healthy targets remain, the ALB removes that target while Route 53 can keep the region in its 50/50 DNS distribution. For ALB alias records, enable **Evaluate Target Health**. Route 53 does **not** automatically reweight a degraded-but-healthy region by surviving instance count.
+
+**Two limits:** DNS TTLs delay client switching; existing connections don't migrate. If **all** records fail health checks, Route 53 may still answer with unhealthy targets (fail-open). DNS failover is not proof of end-to-end availability.
+
+AWS docs: [failover modes](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/dns-failover-types.html) · [health-aware selection](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/health-checks-how-route-53-chooses-records.html).
+
 ## Health checks
 
 Route 53 health checks are performed by a fleet of **global checkers** scattered around the internet. That creates one famous limitation:
@@ -88,13 +102,15 @@ You can also build **calculated health checks** — combine up to 256 child chec
 | Failure level | Who fixes it | Speed |
 |---|---|---|
 | Instance dies in a region | **ELB** stops routing to it | Instant (in-path) |
-| Whole region/site dies | **Route 53** failover policy | Slow-ish (DNS TTL caching) |
+| Whole region/site dies | **Route 53** health-aware routing (active-active or active-passive) | DNS TTL-dependent |
 
 One neat corollary: if your DR design is **a single instance per region**, there's nothing for an ELB to balance — Route 53 Failover pointing at the instances directly is enough, and you can **skip the ELB entirely** (saves money; the exam likes this).
 
 ## Question patterns
 
 > *"Point the apex/root domain example.com at an Application Load Balancer"* → **Alias record** (CNAME is forbidden at the apex; Alias is the AWS answer, free and auto-tracking).
+
+> *"All regions serve traffic; unhealthy region stops receiving new DNS answers"* → **active-active Weighted/Latency + health checks**.
 
 > *"Active-passive setup: send traffic to the standby region only when the primary fails"* → **Failover routing policy + health check** ("active-passive" is the giveaway).
 
@@ -120,6 +136,7 @@ One neat corollary: if your DR design is **a single instance per region**, there
 | name → name, NOT at apex | CNAME |
 | "A/B test", "10% canary" | **Weighted** |
 | "best performance", "lowest latency" | **Latency** |
+| "active-active", "all healthy regions serve" | **Weighted/Latency** + health checks |
 | "active-passive", "DR site" | **Failover** + health check |
 | "users in country X get X content", compliance | **Geolocation** (+ Default record) |
 | "bias", "shift traffic share between regions" | **Geoproximity** |
