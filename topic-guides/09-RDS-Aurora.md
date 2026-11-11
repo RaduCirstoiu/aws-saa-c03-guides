@@ -78,6 +78,15 @@ Because every node plugs into the **same shared storage**, a failed writer is re
 
 RPO (Recovery Point Objective) = how much data you may lose; RTO (Recovery Time Objective) = how long until you're back. Aurora Global Database's "~1s / <1min" pair is a memorize-it number.
 
+### Scaling and migration: change the compute or move the data?
+
+- **Regular RDS scale UP** → **Modify DB instance class** (CPU/RAM); the resize interrupts that DB instance. **Read replicas** scale reads, not writes; **Multi-AZ** is for availability, not extra writer capacity.
+- **RDS MySQL/PostgreSQL → Aurora** → **new Aurora cluster + data migration**. Snapshot/restore is simple but needs a cutover; a compatible **Aurora read replica of RDS**, followed by catching up and promotion, can minimize downtime. **DMS/CDC** suits more complex migrations.
+- **Provisioned Aurora → Serverless v2** → **same cluster, same shared storage**; Serverless v2 is an **instance class (`db.serverless`)**, not a separate engine. Set min/max ACUs, **add a Serverless v2 reader → controlled failover to make it the writer**. The **cluster writer endpoint stays the same**; brief failover/reconnections.
+- **Reverse works too**: add/convert a provisioned reader and fail over. Mixed provisioned/Serverless v2 writers and readers are supported on compatible Aurora engine versions.
+
+**THE trap:** *"Existing compatible Aurora cluster, flash-sale spikes, MINIMUM downtime converting writer to Serverless v2"* → **Serverless reader → failover**. Modifying the existing writer directly to `db.serverless` **is possible**, but interrupts that writer; **DMS/snapshot** create another cluster unnecessarily. **Aurora Replica Auto Scaling** adds/removes **readers**; Serverless v2 ACUs scale **each instance's compute**.
+
 ### Three Aurora details that look like RDS trivia (but cost points)
 
 - **Custom endpoints**: writer endpoint → current writer; reader endpoint → all eligible readers; **custom endpoint → a chosen subset of DB instances** (e.g., powerful replicas for production reads, smaller replicas for reports). A custom endpoint does **not** make a replica writable.
@@ -96,6 +105,8 @@ RPO (Recovery Point Objective) = how much data you may lose; RTO (Recovery Time 
 > *"Encrypt an existing unencrypted RDS database"* → **snapshot → copy with encryption → restore** (encryption is creation-time only; this is the snapshot dance).
 
 > *"Global application needs cross-region DR with less than 1 minute recovery"* → **Aurora Global Database** (RPO ~1s, RTO <1min — nothing else touches it).
+
+> *"Existing provisioned Aurora DB has flash-sale spikes; switch to Serverless v2 with minimum downtime."* → **Add Serverless v2 reader → failover** (same shared storage and writer cluster endpoint).
 
 > *"Dev database sits idle nights and weekends; minimize cost"* → **Aurora Serverless v2** (spiky/idle/unpredictable = serverless).
 
@@ -131,6 +142,9 @@ RPO (Recovery Point Objective) = how much data you may lose; RTO (Recovery Time 
 | OS access / custom engine | EC2 or RDS Custom |
 | failover <30s, 15 low-lag replicas, 128TB autogrow | **Aurora** |
 | spiky / idle / unpredictable load | **Aurora Serverless v2** |
+| provisioned Aurora → Serverless v2, minimum downtime | **Add db.serverless reader → failover** |
+| RDS MySQL/PostgreSQL → Aurora, minimum downtime | **Compatible Aurora replica → catch up → promote/cut over** |
+| ordinary RDS needs more CPU/RAM | **Modify instance class** (interruption) |
 | cross-region DR, RPO ~1s, RTO <1min | **Aurora Global Database** |
 | instant prod copy for staging | **Aurora Cloning** |
 | undo mistake fast, no restore | **Aurora Backtrack** |
