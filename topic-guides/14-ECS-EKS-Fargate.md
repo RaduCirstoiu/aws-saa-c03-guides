@@ -89,6 +89,23 @@ Hook: **Execution = getting the container up. Task Role = what the app does once
 
 **2026 reality check:** EKS clusters on **Kubernetes 1.28+ already envelope-encrypt all Kubernetes API data by default** using an **AWS-owned KMS key**; you can opt for a **customer-managed KMS key**. Older practice questions may still ask you to *enable* EKS Secrets encryption (that procedure applies to EKS 1.27 and older). Separate the **exam's intended service distinction** from today's default.
 
+### EKS node scaling vs pod scaling (Q40)
+
+- **HPA** changes **pod replica counts** (usually via Metrics Server). It **does not create EC2 nodes**.
+- **Cluster Autoscaler** adds/removes nodes by scaling existing **Auto Scaling Groups**.
+- **Karpenter** launches **right-sized EC2 nodes directly** for unschedulable pods; handles diverse/spiky workloads with flexible provisioning and consolidation. **EKS Auto Mode** provides AWS-managed compute scaling built on Karpenter.
+- **VPA** changes pod CPU/memory requests; it isn't a substitute for HPA + node capacity.
+
+**THE trap:** *"Scale pods AND their underlying EC2 capacity with flexible provisioning"* → **HPA + Karpenter**; Cluster Autoscaler can also scale nodes but is tied to ASG abstractions.
+
+### 5G edge + EKS authentication (Q57)
+
+**AWS Wavelength Zones** place compute close to **telecom 5G** users; EKS can run supported **EC2 node groups** there. For IAM users/roles accessing the **Kubernetes API**, use **EKS access entries / Cluster Access Management (CAM) API** with access policies or Kubernetes groups. The older `aws-auth` ConfigMap is legacy/deprecated for new access setups. **IRSA** grants *pods* AWS API permissions; **Fargate pod execution role** lets Fargate run pods; **ECS connector** and **Control Tower** do not configure Kubernetes-user RBAC.
+
+> *"5G edge + EKS + IAM identities must access cluster"* → **Wavelength node groups + EKS access entries**.
+
+Sources: [EKS autoscaling](https://docs.aws.amazon.com/eks/latest/userguide/autoscaling.html), [EKS access management](https://docs.aws.amazon.com/eks/latest/best-practices/cluster-access-management.html).
+
 ## Question patterns
 
 > *"Run containers without managing any servers or clusters of instances"* → **Fargate** (the phrase "no server management" is the trigger)
@@ -108,6 +125,8 @@ Hook: **Execution = getting the container up. Task Role = what the app does once
 
 | Keyword | Answer |
 |---|---|
+| EKS scale pods + right-sized nodes | HPA + Karpenter (EKS Auto Mode also builds on Karpenter) |
+| 5G Kubernetes + IAM user/role cluster access | EKS in Wavelength + CAM API access entries |
 | "No server management" + containers | Fargate |
 | "Already using Kubernetes" / "multi-cloud" | EKS |
 | GPUs for containers | EC2 launch type (never Fargate) |
