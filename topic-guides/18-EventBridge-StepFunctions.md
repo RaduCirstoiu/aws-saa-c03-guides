@@ -64,6 +64,10 @@ That last row is gold: *"retry failed steps with exponential backoff without wri
 
 "Workflow includes a **human approval step**" or "runs for days" → **Standard**. "**Hundreds of thousands of short IoT events** per second, cost-sensitive" → **Express**.
 
+### SWF — the older workflow service
+
+**Amazon SWF (Simple Workflow Service)** coordinates tasks executed by distributed **workers**, including workers running **on-premises**. An application polls for work and reports completion; SWF tracks workflow state. **Step Functions** is the newer managed state-machine/visual-orchestration choice for most new AWS workflows. **THE trap:** neither is a substitute for a **queue** that buffers messages between loosely coupled producers and consumers. *\"Decouple components\"* → **SQS**; *\"coordinate activities across workers, including on-prem\"* → **SWF** (if specifically offered).
+
 ## Question patterns
 
 > *"Run a cleanup Lambda every night at 2 AM without managing servers."* → **EventBridge scheduled rule → Lambda** (serverless cron, no EC2 crontab).
@@ -97,6 +101,8 @@ That last row is gold: *"retry failed steps with exponential backoff without wri
 | Cross-account event routing | EventBridge cross-account bus |
 | Huge fan-out push / SMS / mobile | SNS (not EventBridge) |
 | Multi-step workflow, retries, audit | Step Functions |
+| Legacy workflow with distributed/on-prem workers | SWF |
+| Buffer/de-couple producers and consumers | SQS (not SWF or VPC peering) |
 | Workflow > 15 min | Step Functions (not Lambda chain) |
 | Human approval / up to 1 year | Standard workflow |
 | High-volume short IoT / < 5 min | Express workflow |
