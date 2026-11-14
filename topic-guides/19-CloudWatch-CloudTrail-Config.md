@@ -53,6 +53,14 @@ Question verb          →  Service
 
 **EC2 vs RDS OS metrics — THE trap:** EC2's default metrics don't include memory or filesystem **space used** → install **CloudWatch agent**. RDS aggregate CPU is visible in CloudWatch, but **per-process CPU/memory** → enable **RDS Enhanced Monitoring** (managed OS details). EBS disk I/O metrics are not filesystem utilization. There is no "EC2 Enhanced Monitoring" switch.
 
+### THE CloudTrail default encryption trap (Q31)
+
+**CloudTrail log files in S3 are encrypted at rest by default** — no extra SSE configuration is required merely to meet an *encrypted-at-rest* requirement. You can choose **SSE-KMS** when you need customer-key control and KMS auditing. Distinguish **encryption** from **log file integrity validation** (tamper detection).
+
+> *"Record AWS API changes, logs encrypted at rest, simplest setup"* → **CloudTrail default configuration**, not redundant S3 SSE setup.
+
+Source: [AWS CloudTrail data protection](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/data-protection.html).
+
 ## Question patterns
 
 > *"Determine who terminated a production EC2 instance last week."* → **CloudTrail** (API audit = who did what).
@@ -81,6 +89,7 @@ Question verb          →  Service
 
 | Keyword | Answer |
 |---|---|
+| CloudTrail logs encrypted at rest by default? | Yes — S3 server-side encryption; SSE-KMS optional |
 | Performance, health, alarms | CloudWatch |
 | Who did what / API audit | CloudTrail |
 | Config history / compliance | AWS Config |
