@@ -88,6 +88,17 @@ THE trap: *"GuardDuty vs Inspector"* — GuardDuty watches **behavior in logs** 
 
 THE trap: *"Macie for EC2 or RDS"* → no. **Macie is S3-only.**
 
+### THE network inspection vs analysis trap (Q53)
+
+- **AWS Network Firewall** = managed **stateful/stateless traffic inspection and enforcement** for VPC ingress/egress. Create rule groups **and route traffic through firewall endpoints using VPC route tables**.
+- **Network Access Analyzer** = **offline configuration analysis**: discover unintended reachable paths; it does **not inspect live packets or block traffic**.
+- **Reachability Analyzer** = analyze a particular network path/configuration; **VPC Traffic Mirroring** = copy packets to an analysis appliance, not itself a firewall.
+- **WAF** = HTTP(S) Layer 7 filtering; **Shield** = DDoS protection.
+
+> *"Inspect and filter traffic entering/leaving a VPC"* → **Network Firewall + routing**, NOT Network Access Analyzer.
+
+Source: [AWS Network Firewall](https://docs.aws.amazon.com/network-firewall/latest/developerguide/what-is-aws-network-firewall.html).
+
 ## Question patterns
 
 > *"Block SQL injection attacks against an application behind an ALB"* → **WAF on the ALB** (L7 rules read HTTP).
@@ -116,6 +127,7 @@ THE trap: *"Macie for EC2 or RDS"* → no. **Macie is S3-only.**
 
 | Keyword | Answer |
 |---|---|
+| Inspect/filter actual VPC ingress and egress | Network Firewall + route tables (not Network Access Analyzer) |
 | SQLi / XSS / HTTP filtering | WAF |
 | Rate limit per IP | WAF rate-based rule |
 | Test rule without blocking | WAF Count mode |
