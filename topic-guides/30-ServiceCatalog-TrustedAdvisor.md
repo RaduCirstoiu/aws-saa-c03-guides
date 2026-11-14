@@ -26,6 +26,19 @@ Also worth one neuron each:
 - Trusted Advisor **recommends**; it doesn't fix. Pair it with EventBridge/CloudWatch for alerting on check status changes.
 - Distinguish from neighbors: **Config** = "is this resource *compliant with my rules*?"; **Inspector** = software vulnerabilities on workloads; **Trusted Advisor** = broad best-practice checks across the five pillars, including cost and limits.
 
+### Automated service-quota warnings (Q25)
+
+**Trusted Advisor Service Limits** checks quotas, but a question demanding **automatic supported-quota usage monitoring + low-overhead alerts** points to **Service Quotas Automatic Management**:
+
+1. Enable **Notify Only** (watch utilization, **do not** request increases); **Notify and Auto-Adjust** instead can request supported quota increases.
+2. Configure **AWS User Notifications** for email/chat/mobile delivery. Automatic Management also surfaces AWS Health events; EventBridge is an optional automation route.
+
+**THE trap:** SNS by itself is only a delivery target; it doesn't monitor quota utilization. Trusted Advisor is a quota check, **not** this automatic management workflow.
+
+> *"Warn administrators as quotas approach limits; no auto-increase"* → **Service Quotas Automatic Management: Notify Only + AWS User Notifications**.
+
+Source: [AWS Service Quotas Automatic Management](https://docs.aws.amazon.com/servicequotas/latest/userguide/automatic-management.html).
+
 ## Question patterns
 
 > *"Non-technical teams must deploy infrastructure, but only pre-approved configurations, without granting them broad IAM permissions"* → **Service Catalog** (vending machine: products in portfolios, launch-on-behalf)
@@ -44,6 +57,7 @@ Also worth one neuron each:
 
 | Keyword | Answer |
 |---|---|
+| Automatic quota warnings; do NOT raise quotas | Service Quotas Automatic Management Notify Only + User Notifications |
 | Self-service approved stacks, minimal IAM | Service Catalog |
 | Product / portfolio | Service Catalog terms (CFN template / group of products) |
 | Idle / unused / unattached resources | Trusted Advisor (Cost) |
