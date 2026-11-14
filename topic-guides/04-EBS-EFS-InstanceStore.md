@@ -123,6 +123,14 @@ Legit uses: **cache, buffer, scratch space, temp processing files**, or data tha
 | **FSx** | Managed third-party file systems — **Windows (SMB/AD)**, or Lustre for HPC |
 | **S3** | Object storage over HTTP — not a disk at all; apps talk to it via API, effectively unlimited |
 
+### What EBS encryption actually covers (Q33)
+
+Encrypted EBS volumes protect **data at rest**, **snapshots made from the volume**, **volumes restored from those snapshots**, and **data moving between the EC2 instance and the EBS volume**. Encryption/decryption is transparent to the instance; don't confuse it with encrypting application traffic between servers.
+
+> *"EBS is encrypted, but is instance-to-volume traffic plaintext?"* → **No — that traffic is encrypted too.**
+
+Source: [AWS EBS encryption](https://docs.aws.amazon.com/ebs/latest/userguide/ebs-encryption.html).
+
 ## Question patterns
 
 > *"Database needs 12,000 IOPS, cost-effective"* → **gp3** (under the 16,000 line, and gp3 provisions IOPS cheaply)
@@ -155,6 +163,7 @@ Legit uses: **cache, buffer, scratch space, temp processing files**, or data tha
 
 | Keyword | Answer |
 |---|---|
+| Encrypted EBS: instance ↔ volume traffic | Encrypted in transit too |
 | random I/O / database / boot volume | SSD (gp3 or io1/io2) |
 | large sequential / big data / throughput MB/s | HDD (st1/sc1) — never bootable |
 | ≤ 16,000 IOPS | gp3 |
