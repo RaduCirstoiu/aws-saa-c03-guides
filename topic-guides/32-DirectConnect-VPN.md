@@ -49,6 +49,14 @@ Virtual interfaces (VIFs) — how traffic gets sorted on the fiber:
 - Need **consistent performance**, **large steady data volumes**, or compliance says **"must not traverse the public internet"** → **Direct Connect**
 - Want both reliability worlds → **DX primary + VPN backup**
 
+### Scale VPN bandwidth with ECMP (Q61)
+
+An individual Site-to-Site VPN tunnel has a throughput ceiling. **Transit Gateway (TGW) + Equal-Cost Multi-Path (ECMP)** can **aggregate bandwidth across multiple VPN tunnels**. Enable TGW VPN ECMP, use **dynamic BGP routing** and compatible customer-gateway routing; **static routes do not support ECMP**. More customer gateways without ECMP aren't the same thing as aggregating usable throughput.
+
+> *"Many VPNs, bandwidth bottleneck, want aggregate throughput"* → **TGW + ECMP + BGP + additional VPN tunnels**, not a second customer gateway alone.
+
+Source: [AWS Transit Gateway VPN](https://docs.aws.amazon.com/whitepapers/latest/aws-vpc-connectivity-options/aws-transit-gateway-vpn.html).
+
 ## Question patterns
 
 > *"Transferring 5 TB nightly; VPN performance is inconsistent"* → **Direct Connect** (dedicated fiber = consistent throughput for big regular transfers)
@@ -69,6 +77,7 @@ Virtual interfaces (VIFs) — how traffic gets sorted on the fiber:
 
 | Keyword | Answer |
 |---|---|
+| Aggregate multiple Site-to-Site VPN tunnels | Transit Gateway ECMP + dynamic BGP (not static routing) |
 | Encrypted tunnel, quick, cheap | Site-to-Site VPN |
 | VGW + CGW | Site-to-Site VPN components (AWS + customer side) |
 | Consistent bandwidth, dedicated | Direct Connect |
