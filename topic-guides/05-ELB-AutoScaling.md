@@ -131,6 +131,28 @@ Route 53 (DNS)  ──►  survives a REGION dying   (DNS failover — minutes, 
 
 **ELB is fast, in-path, within a region. Route 53 failover is DNS-based, slower, across regions.** Serious architectures use both — that's the layered high-availability answer the exam loves.
 
+### ALB request logs vs tracing (Q48)
+
+**ALB access logs** record individual HTTP requests: **client IP, request path, target, status, timings/latency**. Enable delivery to **S3** (roughly five-minute batches) to analyze traffic. **X-Ray** traces application calls across services; **CloudTrail** records API actions on the load balancer, not its visitors' HTTP requests. CloudWatch **Application Insights** helps correlate application monitoring and troubleshooting.
+
+> *"All HTTP requests, client IP, latency, five-minute delivery"* → **ALB access logs**, not X-Ray or CloudTrail.
+
+### SQS-driven EC2 scaling — metric follows the SLA (Q60)
+
+An **I/O-bound queue consumer** can miss its SLA while CPU stays low. Don't use **CPUUtilization** as a proxy for queue delay. **ApproximateAgeOfOldestMessage** directly monitors how long the oldest queued message has waited (the metric picked by the timed-mode SLA question). For **production target tracking**, AWS generally recommends **backlog per instance** = visible messages / in-service consumers, targeted to acceptable latency / average processing time. Queue age is especially useful as an SLA alarm.
+
+> *"SQS backlog grows, I/O-heavy consumers, time-to-response SLA"* → scale consumers from **queue pressure/latency**, **not CPU**.
+
+### Auto Scaling lifecycle hooks — direction matters (Q62)
+
+- **Launch** → `Pending:Wait`: run initialization before the instance enters service.
+- **Terminate** → `Terminating:Wait`: pause termination so automation can ship local logs or clean up; EventBridge → Lambda/SSM → CloudWatch Logs, then `CompleteLifecycleAction`.
+- An **instance termination** cannot transition into `Pending:Wait`. A **termination-success** event arrives too late to retrieve ephemeral logs.
+
+> *"Unhealthy instance is about to disappear; preserve local logs"* → **termination lifecycle hook**, **Terminating:Wait**, upload logs **before** termination.
+
+Sources: [ALB access logs](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html), [SQS scaling](https://docs.aws.amazon.com/autoscaling/ec2/userguide/as-using-sqs-queue.html), [lifecycle hooks](https://docs.aws.amazon.com/autoscaling/ec2/userguide/lifecycle-hooks-overview.html).
+
 ## Question patterns
 
 > *"Route `/api/*` to one set of servers and `/images/*` to another"* → **ALB path-based routing** (only L7 sees URLs)
@@ -159,6 +181,9 @@ Route 53 (DNS)  ──►  survives a REGION dying   (DNS failover — minutes, 
 
 | Keyword | Answer |
 |---|---|
+| Every HTTP request, client IP, latency | ALB access logs → S3 (not X-Ray) |
+| I/O-bound SQS consumer misses latency SLA | Queue-age SLA alarm; target track backlog/instance (not CPU) |
+| Save logs before EC2 ASG termination | Terminating:Wait hook → collect → CompleteLifecycleAction |
 | Path / host / header routing | ALB |
 | HTTP, microservices, containers, Lambda target | ALB |
 | WAF on a load balancer | ALB (L7 only) |
