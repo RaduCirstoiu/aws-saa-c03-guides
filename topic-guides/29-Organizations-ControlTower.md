@@ -32,6 +32,12 @@ Signal phrase: "set up / automate a **governed, secure multi-account environment
 
 **RAM (Resource Access Manager)** — share actual **resources** across accounts without duplicating them: **VPC subnets** (multiple accounts launching into one shared VPC), **Transit Gateways**, **Route 53 Resolver rules**, License Manager configs. "Avoid building the same networking in every account" → RAM.
 
+### Divisional autonomy + central governance
+
+**Separate AWS accounts per division** keep resources isolated and let each team administer its own account. **Organizations consolidated billing** gives corporate IT cost oversight; **cross-account IAM roles** let central admins access member accounts without pooling everything into one account.
+
+**THE trap:** *"Divisions stay autonomous; central IT needs governance, access and one bill"* → **member accounts + consolidated billing + cross-account access**, not tags or separate VPCs in one account.
+
 ## Question patterns
 
 > *"Prevent all accounts in the organization from launching resources outside approved regions"* → **SCP on the root/OU** (org-wide ceiling = SCP)
@@ -54,6 +60,7 @@ Signal phrase: "set up / automate a **governed, secure multi-account environment
 
 | Keyword | Answer |
 |---|---|
+| Autonomous divisions + corporate billing/admin access | Organizations accounts + consolidated billing + cross-account IAM |
 | Block actions org-wide / by OU | SCP |
 | SCP grants permissions? | Never — ceiling only (needs IAM allow too) |
 | SCP vs management account | Doesn't apply — exempt |
