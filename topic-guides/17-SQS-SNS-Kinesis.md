@@ -96,6 +96,12 @@ Existing on-prem app speaking **open broker protocols — MQTT, AMQP, JMS, STOMP
 | **Firehose** | Delivery pipe | Fixed destinations | Buffers ~60s | Dump streams into S3/Redshift/OpenSearch/Splunk, zero code |
 | **Amazon MQ** | Traditional broker | Protocol-based | Broker semantics | MQTT/AMQP/JMS migration, no code changes |
 
+### Two-way SMS vs SNS (exam trap)
+
+**SNS can send SMS**, but an app that must **receive customer replies** needs **AWS End User Messaging SMS** with a **two-way SMS-enabled number**. Incoming replies → **SNS topic → Lambda → Kinesis Data Streams** for near-real-time processing. Kinesis retention defaults to **24 hours**; configure up to **365 days** when a full year's replay is required.
+
+**THE trap:** *"Subscribers must reply to the SMS and responses must be kept for one year"* → **End User Messaging SMS + Kinesis 365-day retention**, not SNS outbound SMS + a default (24-hour) stream.
+
 ## Question patterns
 
 > *"Web tier overwhelmed by traffic spikes; orders being lost"* → **SQS + Auto Scaling worker group** (queue buffers the spike, workers scale on depth)
@@ -114,6 +120,7 @@ Existing on-prem app speaking **open broker protocols — MQTT, AMQP, JMS, STOMP
 
 | Keyword | Answer |
 |---|---|
+| Two-way SMS + reply analytics + 1-year replay | End User Messaging SMS → SNS → Lambda → Kinesis (365d) |
 | Decouple / buffer spikes | SQS |
 | One message → one worker, PULL | SQS |
 | Processed twice | Increase visibility timeout (default 30s) |
