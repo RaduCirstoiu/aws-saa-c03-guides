@@ -131,6 +131,12 @@ Encrypted EBS volumes protect **data at rest**, **snapshots made from the volume
 
 Source: [AWS EBS encryption](https://docs.aws.amazon.com/ebs/latest/userguide/ebs-encryption.html).
 
+### EBS Encryption by Default — the regional switch
+
+**EBS Encryption by Default** is an **account-and-Region setting**, not a per-volume toggle. Once enabled, **new EBS volumes and copies of unencrypted snapshots** are encrypted, including volumes restored from previously unencrypted snapshots. It **does not retroactively encrypt** existing volumes or snapshots.
+
+**THE trap:** *"Automatically encrypt every NEW volume restored from unencrypted snapshots"* → **enable EBS Encryption by Default in that Region**; manually passing a KMS key for each volume is not automatic.
+
 ## Question patterns
 
 > *"Database needs 12,000 IOPS, cost-effective"* → **gp3** (under the 16,000 line, and gp3 provisions IOPS cheaply)
@@ -163,6 +169,7 @@ Source: [AWS EBS encryption](https://docs.aws.amazon.com/ebs/latest/userguide/eb
 
 | Keyword | Answer |
 |---|---|
+| automatically encrypt new volumes from unencrypted snapshots | EBS Encryption by Default (account + Region) |
 | Encrypted EBS: instance ↔ volume traffic | Encrypted in transit too |
 | random I/O / database / boot volume | SSD (gp3 or io1/io2) |
 | large sequential / big data / throughput MB/s | HDD (st1/sc1) — never bootable |
