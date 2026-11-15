@@ -69,6 +69,12 @@ Rule: *needs external calls or real logic* → **Lambda@Edge**; *trivial header/
 
 **Environment-variable encryption trap:** Lambda encrypts environment variables **at rest by default**. A **customer-managed KMS key + console encryption helpers** adds client-side protection if *"other developers must not see plaintext values"*. For rotatable DB/API credentials, **Secrets Manager** with tightly scoped IAM is usually the better production choice. Default at-rest encryption alone is not a secret-access policy.
 
+### Lambda Function URL vs API Gateway
+
+**Function URL** = a built-in HTTPS endpoint directly invoking **one Lambda function**, with **NONE** or **AWS_IAM** auth. **API Gateway** adds routes, authorizers, usage plans, throttling and API management, but more setup.
+
+**THE trap:** *"Third party POSTs to a simple webhook; LEAST operational overhead"* → **Lambda Function URL**. *"Managed REST API, custom authorization or throttling"* → **API Gateway**. For a public Function URL, secure and validate requests in the application (NONE isn't authentication).
+
 ## Question patterns
 
 > *"90-minute video transcoding job — can it run on Lambda?"* → **No — AWS Batch / Fargate** (15-minute hard limit; Step Functions only if divisible into <15-min steps)
@@ -89,6 +95,7 @@ Rule: *needs external calls or real logic* → **Lambda@Edge**; *trivial header/
 
 | Keyword | Answer |
 |---|---|
+| Simple HTTPS webhook → one Lambda, least setup | Lambda Function URL (vs API Gateway for API features) |
 | Job > 15 minutes | NOT Lambda → Batch / Fargate |
 | Divisible into <15-min steps | Step Functions |
 | CPU-bound slow function | Increase memory |
