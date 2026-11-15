@@ -77,6 +77,12 @@ Any question asking for a "fully serverless web/API architecture" is assembling 
 
 **400 KB item limit.** An item can't exceed 400 KB. Storing images/documents? **Put the object in S3, store the S3 pointer (key/URL) in DynamoDB.** This S3-plus-pointer pattern is a recurring correct answer.
 
+### Streaming telemetry: real-time vs analytics warehouse
+
+**Kinesis Data Streams → Lambda → DynamoDB** suits high-volume events needing **single-digit-millisecond item access**. **Redshift** is a warehouse for SQL analytics over large datasets, not a millisecond-serving database.
+
+**THE trap:** *"IoT stream + near-real-time processing + millisecond responses"* → **Kinesis + Lambda + DynamoDB**, not Kinesis + Lambda + Redshift.
+
 ## Question patterns
 
 > *"Flash sale causes unpredictable spikes; table throttles"* → **On-Demand capacity mode** (pay-per-request absorbs spikes)
@@ -94,6 +100,7 @@ Any question asking for a "fully serverless web/API architecture" is assembling 
 
 | Keyword | Answer |
 |---|---|
+| IoT stream + millisecond item access | Kinesis Streams → Lambda → DynamoDB (not Redshift) |
 | Serverless NoSQL, key-value, any scale | DynamoDB |
 | Joins / complex SQL | RDS or Aurora instead |
 | Spiky / unknown traffic | On-Demand mode |
