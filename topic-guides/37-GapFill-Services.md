@@ -107,6 +107,12 @@ One service, several exam-favorite features:
 
 **Glue ETL ≠ Glue crawler.** A **crawler discovers schema/catalog metadata**; a **Glue ETL job transforms the bytes** (e.g., **2 GB CSV → Parquet**). For *"on every S3 upload"*, send **S3 Object Created → EventBridge → Glue job/workflow**. Lambda can transform small files, but its **15-minute limit** makes large ETL riskier; **Transfer Family/SFTP** is for file-transfer protocols, not S3-to-S3 conversion.
 
+### ACM expiration monitoring
+
+**ACM-managed public certificates normally renew automatically**, but expiring/imported or renewal-blocked certificates still need alerts. **ACM expiration events → EventBridge → SNS**, or **CloudWatch `DaysToExpiry` metric → alarm/SNS**. A scheduled EventBridge workflow can check that metric when the question specifies periodic evaluation.
+
+**THE trap:** *"Notify 30 days before ACM certificate expires"* → **ACM/EventBridge expiration event or `DaysToExpiry` monitoring**, not a custom AWS Config rule by default.
+
 ## Question patterns
 
 > *"Existing on-prem app uses RabbitMQ with AMQP; migrate with minimal code changes"* → **Amazon MQ** (protocol keywords = MQ; SQS would mean rewriting)
@@ -139,6 +145,7 @@ One service, several exam-favorite features:
 
 | Keyword | Answer |
 |---|---|
+| Alert before ACM certificate expiry | EventBridge ACM events or CloudWatch DaysToExpiry |
 | MQTT / AMQP / JMS, minimal rewrite | Amazon MQ |
 | Lift-and-shift servers (rehost) | MGN |
 | DR replication, RPO seconds | Elastic Disaster Recovery (DRS) |
