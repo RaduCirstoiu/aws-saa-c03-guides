@@ -106,6 +106,12 @@ Hook: **Execution = getting the container up. Task Role = what the app does once
 
 Sources: [EKS autoscaling](https://docs.aws.amazon.com/eks/latest/userguide/autoscaling.html), [EKS access management](https://docs.aws.amazon.com/eks/latest/best-practices/cluster-access-management.html).
 
+### ECS scale TWO layers: tasks vs EC2 capacity
+
+**ECS Service Auto Scaling** changes **task count** using service **CPU/memory** (or other target metrics). **ECS capacity provider managed scaling** changes the **EC2 Auto Scaling Group capacity** that hosts those tasks. Scaling tasks alone cannot create missing EC2 slots; scaling EC2 alone doesn't raise a service's desired tasks.
+
+**THE trap:** *"Peak load: scale ECS service memory AND underlying EC2 instances"* → **service scaling + capacity-provider/ASG scaling**. An **ALB target group has no CPU-utilization metric**; CPU belongs to tasks/instances/services.
+
 ## Question patterns
 
 > *"Run containers without managing any servers or clusters of instances"* → **Fargate** (the phrase "no server management" is the trigger)
@@ -125,6 +131,7 @@ Sources: [EKS autoscaling](https://docs.aws.amazon.com/eks/latest/userguide/auto
 
 | Keyword | Answer |
 |---|---|
+| ECS tasks vs EC2 host capacity | Service Auto Scaling vs capacity provider / ASG scaling |
 | EKS scale pods + right-sized nodes | HPA + Karpenter (EKS Auto Mode also builds on Karpenter) |
 | 5G Kubernetes + IAM user/role cluster access | EKS in Wavelength + CAM API access entries |
 | "No server management" + containers | Fargate |
