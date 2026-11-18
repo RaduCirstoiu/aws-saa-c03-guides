@@ -184,3 +184,56 @@ One service, several exam-favorite features:
 | S3 upload → large CSV-to-Parquet conversion | **EventBridge → Glue ETL** (crawler only catalogs) |
 
 That's the last jar on the spice rack — you've now covered the whole SAA-C03 kitchen. Sleep well, read the last sentence first, and go collect your certificate.
+
+## More small-but-tested decision traps
+
+**Neptune Streams** — Neptune is the **graph database**; its native **Streams** feature captures ordered graph data changes. Signal: *"track changes to customer/product relationships in Neptune"* → **Neptune Streams**, not Kinesis added as a second generic stream. [AWS](https://docs.aws.amazon.com/neptune/latest/userguide/streams.html).
+
+**Application Discovery Service + Migration Hub vs MGN** — **Discovery Service inventories** VMs/dependencies, **Migration Hub tracks** the migration portfolio; **MGN replicates/rehosts** machines. THE trap: *"first discover hundreds of VMs and track each migration"* ≠ *"migrate VMs with little downtime."*
+
+**CloudTrail Lake** — SQL queries over AWS API event data. Signal: *"find AccessDenied/Unauthorized AWS API calls across accounts"* → CloudTrail Lake, not QuickSight dashboards or X-Ray tracing. **CloudTrail** audits API calls; **X-Ray** traces an application's request path.
+
+**CloudWatch Container Insights** — container/cluster telemetry for **EKS/ECS** without hand-building all dashboards and agents. **Compute Optimizer** — analyzes utilization to suggest rightsizing; CloudWatch metrics alone do not give the same recommendations.
+
+**Amazon Managed Service for Prometheus ↔ Amazon Managed Grafana** — **Prometheus stores/queries metrics; Grafana visualizes them**. Think *"thermometer readings → chart."* THE trap: Grafana isn't the container-metrics backend feeding Prometheus.
+
+**Lake Formation column-level access** — govern data lake tables/columns with **data filters**; **Athena** queries the S3 lake and **QuickSight** visualizes the resulting datasets. THE trap: an IAM policy on QuickSight users alone is not Lake Formation column governance.
+
+**AWS Transfer Family SFTP + EFS** — managed SFTP backed by EFS, with an **internet-facing VPC-hosted endpoint + security-group IP allowlist** when only trusted public IPs may connect. The service's generic public endpoint does not supply the equivalent VPC security-group control.
+
+**Customer-managed VPC prefix lists + AWS RAM** — maintain reusable CIDRs once and share them across accounts; reference the list in each security group. THE trap: don't invent a Lambda-driven security-group update service if sharing the list directly meets the requirement.
+
+**AWS Backup Vault Lock** — retention immutability (compliance mode for compliance-grade retention). Separate this from **FSx for Windows Multi-AZ** availability and **cross-Region backup copying**.
+
+**EMR cluster node cost rule** — **primary + core On-Demand**, **task Spot** for a transient, data-critical batch cluster. Core nodes hold HDFS data; task nodes are disposable compute. **THE trap:** "cheapest" still has to satisfy the no-data-loss requirement. [AWS node roles](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-master-core-task-nodes.html).
+
+### Question patterns
+
+> *"Graph recommendations database must capture changes with least overhead"* → **Neptune + Neptune Streams**, not Kinesis Data Streams as a replacement for native CDC.
+
+> *"Inventory hundreds of on-prem VMs; centrally track migration"* → **Application Discovery Service + Migration Hub**; MGN is the move itself.
+
+> *"CloudTrail API events must be searched for IAM authorization errors"* → **CloudTrail Lake**, not application X-Ray traces.
+
+> *"Container metrics stored and queried, then displayed as dashboards"* → **Managed Prometheus → Managed Grafana**, in that direction.
+
+> *"NLB targets pass TCP yet return bad HTTP responses"* → **NLB HTTP health check**, not necessarily a replacement ALB.
+
+> *"10-hour EMR batch, save money, protect HDFS data"* → **On-Demand primary/core + Spot task nodes**.
+
+### Pocket card — quick keyword match
+
+| Signal | Pick |
+|---|---|
+| Graph database mutations | Neptune Streams |
+| Discover on-prem VM inventory | Application Discovery Service |
+| Track portfolio of migrations | Migration Hub |
+| Actually rehost servers | Application Migration Service |
+| Analyze API authorization errors | CloudTrail Lake |
+| EKS cluster metrics | Container Insights |
+| Compute rightsizing recommendations | Compute Optimizer |
+| Metrics backend / dashboard | Managed Prometheus / Managed Grafana |
+| Data-lake column filtering | Lake Formation data filter |
+| Reusable CIDRs across accounts | Customer-managed prefix list + RAM |
+| Immutable backup retention | AWS Backup Vault Lock |
+| Cheap EMR compute nodes, HDFS retained | Spot task + On-Demand core |
