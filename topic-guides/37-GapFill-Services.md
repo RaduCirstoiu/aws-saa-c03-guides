@@ -10,7 +10,21 @@ Read each entry as: *signal keyword → service*. That's genuinely how the quest
 
 **Amazon MQ** — managed **ActiveMQ / RabbitMQ** message broker. Signal: *"existing application uses **MQTT / AMQP / JMS** (industry-standard messaging protocols) and must migrate with **minimal rewrite**."* THE trap: for **new** applications, AWS wants **SQS/SNS** — MQ is only for lifting existing broker-based apps.
 
-**Application Migration Service (MGN)** — the **lift-and-shift (rehost)** tool. Installs an agent on your on-prem servers, does **continuous block-level replication** into AWS, then you **cut over** to EC2 with minutes of downtime. Signal: *"migrate servers to AWS with minimal changes."*
+**Application Discovery Service (ADS)** — **inventories on-prem servers/VMs**, configuration, utilization, processes and dependencies to PLAN migration. Agent-based collection supports physical/virtual servers; **Agentless Collector** supports VMware discovery. Signal: *"discover hundreds of VMs before migrating."* **Legacy exam answer**: ADS + Migration Hub. **2026 reality**: closed to new customers Nov 7, 2025; use **AWS Transform** for new projects. Old **Discovery Connector** ended support Nov 17, 2025; do not confuse it with Agentless Collector.
+
+**AWS Migration Hub** — **groups discovered servers into applications and centrally tracks migration status**, including supported MGN/DMS migrations; home Region is the tracking-data location, not a requirement that workloads reside there. Signal: *"single dashboard to track migration of every application."* **2026 reality**: closed to new customers Nov 7, 2025; AWS Transform replaces new workflows. **Tracking != replication.**
+
+**Migration Evaluator** — analyzes on-prem inventory/utilization and produces **cost/TCO and business-case** estimates for AWS migration. Signal: *"justify migration ROI / compare on-prem vs AWS costs."* Not the migration executor or application status tracker.
+
+**AWS DataSync** — managed **online bulk/incremental data copy** between supported NFS/SMB/HDFS/object-storage systems and AWS storage (S3, EFS, FSx); on-prem agent where required, scheduling and verification. Signal: *"copy many TB of NAS files to S3/EFS over network."* **DataSync agent does NOT inventory virtual machines.**
+
+**AWS Transfer Family** — managed **SFTP/FTPS/FTP and AS2** file-exchange endpoints backed by S3/EFS (as supported). Signal: *"keep existing partners' SFTP clients/protocols."* Not DataSync for automated high-throughput storage copying.
+
+**AWS Transform** — modern discovery/assessment, wave planning, migration and modernization workflows; recommended for **new** ADS/Migration Hub projects as of 2026. **AWS Transform MGN** is the new name of **Application Migration Service (MGN)** (renamed June 2026), still the server **rehosting replication engine**. Remember the *legacy exam vocabulary* AND *current AWS names*.
+
+**Discovery vs migration vs tracking trap:** *"Inventory VMs AND track application migration"* → **ADS + Migration Hub** (legacy multiple-choice); *"actually rehost VMs"* → **MGN**; *"copy NAS data"* → **DataSync**; *"analyze business case"* → **Migration Evaluator**; *"new migration program in 2026"* → **AWS Transform**. More: [Section 38 — Migration and Transfer](38-Migration-and-Transfer.md).
+
+**Application Migration Service (MGN; now AWS Transform MGN)** — the **lift-and-shift (rehost)** tool. Installs an agent on your on-prem servers, does **continuous block-level replication** into AWS, then you **cut over** to EC2 with minutes of downtime. Signal: *"migrate servers to AWS with minimal changes."*
 
 **Elastic Disaster Recovery (DRS)** — MGN's twin, but for **DR instead of migration**: same continuous replication, but you only launch the recovery instances when disaster strikes. **RPO in seconds, RTO in minutes**, and it's cheap while idle. Signal: *"cost-effective disaster recovery for physical/virtual/cloud servers."*
 
@@ -147,7 +161,12 @@ One service, several exam-favorite features:
 |---|---|
 | Alert before ACM certificate expiry | EventBridge ACM events or CloudWatch DaysToExpiry |
 | MQTT / AMQP / JMS, minimal rewrite | Amazon MQ |
-| Lift-and-shift servers (rehost) | MGN |
+| Inventory on-prem VMs | Application Discovery Service (legacy) / AWS Transform (new) |
+| Central tracking of application migrations | Migration Hub (legacy) / AWS Transform (new) |
+| On-prem to AWS migration cost/TCO assessment | Migration Evaluator |
+| NAS/files/object data to AWS storage over network | DataSync |
+| Partner SFTP/FTPS/FTP endpoint | Transfer Family |
+| Lift-and-shift servers (rehost) | MGN / AWS Transform MGN |
 | DR replication, RPO seconds | Elastic Disaster Recovery (DRS) |
 | DB migration, different engines | DMS + SCT |
 | Free auto-renewing TLS certs | ACM |
