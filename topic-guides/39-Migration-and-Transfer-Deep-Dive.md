@@ -29,6 +29,19 @@
 
 ## 1. Migration is not just copying virtual machines
 
+### Visual overview: the migration lifecycle
+
+```mermaid
+flowchart TD
+    A["1. DISCOVER<br/>Inventory servers and dependencies"] --> B["2. ASSESS<br/>Business case, rightsizing, 7 Rs"]
+    B --> C["3. PLAN<br/>Application groups and migration waves"]
+    C --> D["4. MIGRATE<br/>MGN · DMS · DataSync · Transfer Family"]
+    D --> E["5. TRACK AND VALIDATE<br/>Application status and cutover"]
+    E --> F["6. OPERATE AND MODERNIZE<br/>Monitor, optimize and refactor"]
+    C -. "Tracking overlaps with execution" .-> E
+```
+
+
 Imagine an enterprise datacenter with **500 VMware VMs, 20 physical servers, 80 applications, 60 databases and 300 TB of NFS/SMB storage**. Some applications exchange synchronous RPCs; others share a database or filesystem. Ownership and dependencies are only partially documented.
 
 "Move everything to AWS" contains several independent problems:
@@ -72,6 +85,21 @@ In a legacy multiple-choice question with "Application Discovery Service + Migra
 ---
 
 ## 2. Application Discovery Service (ADS): discover before migrating
+
+### Visual overview: discovery paths
+
+```mermaid
+flowchart TD
+    subgraph DC["On-premises datacenter"]
+      P["Physical or virtual Linux/Windows servers"] --> AG["Application Discovery Agent<br/>Guest-level inventory, process and connection details"]
+      V["VMware vCenter<br/>Hundreds of VMs"] --> AC["Agentless Collector appliance<br/>VM inventory and supported collection modules"]
+    end
+    AG --> ADS["Application Discovery Service<br/>Legacy discovery inventory"]
+    AC --> ADS
+    ADS --> MH["Migration Hub<br/>Legacy application grouping and tracking"]
+    N["New 2026 migration program"] --> T["AWS Transform<br/>Current discovery and planning workflows"]
+```
+
 
 ### 2.1 The problem: inventory is not enough without context
 
@@ -179,6 +207,17 @@ References: [Tutorials Dojo ADS](https://tutorialsdojo.com/aws-application-disco
 
 ## 3. AWS Migration Hub: track applications, not just machines
 
+### Visual overview: inventory + migration status
+
+```mermaid
+flowchart LR
+    ADS["Discovery Service<br/>Server inventory and dependencies"] --> HUB["Migration Hub<br/>Application migration portfolio"]
+    MGN["MGN<br/>Server migration status"] --> HUB
+    DMS["DMS<br/>Database migration status"] --> HUB
+    HUB --> APP["Orders application<br/>Web: completed<br/>API: completed<br/>Database: in progress<br/>Worker: not started"]
+```
+
+
 ### 3.1 Why discovery does not solve progress tracking
 
 Inventory has found six resources belonging to the Orders application:
@@ -272,6 +311,21 @@ References: [AWS Transform FAQ](https://aws.amazon.com/transform/faq/), [AWS Tra
 
 ## 5. AWS Transform MGN: rehost the entire server workload
 
+### Visual overview: MGN block replication and cutover
+
+```mermaid
+flowchart TD
+    S["Source Linux / Windows server<br/>OS + app + disk data"] --> A["MGN replication agent"]
+    A -->|"Initial blocks + ongoing changed blocks"| ST["AWS replication staging area<br/>Staged EBS data"]
+    ST --> TL["Test launch on EC2<br/>Validate application and dependencies"]
+    TL --> C{"Ready for cutover?"}
+    C -->|"No"| FIX["Fix networking / configuration<br/>Continue replication"]
+    FIX --> TL
+    C -->|"Yes"| CUT["Coordinate writes + final synchronization"]
+    CUT --> EC2["Production target EC2<br/>Cutover and validation"]
+```
+
+
 ### 5.1 What "lift-and-shift" actually means
 
 Source:
@@ -359,6 +413,42 @@ References: [AWS MGN FAQ](https://docs.aws.amazon.com/mgn/latest/ug/General-Ques
 ---
 
 ## 6. AWS DMS: database records, full load, CDC and schema conversion
+
+### Visual overview: heterogeneous database migration
+
+```mermaid
+flowchart TD
+    O["Oracle source database"] --> SC["Schema / code conversion<br/>SCT or supported DMS Schema Conversion"]
+    SC --> PS["Prepare Aurora PostgreSQL schema"]
+    O --> FULL["DMS full load<br/>Existing records"]
+    O --> CDC["DMS CDC<br/>Ongoing source changes"]
+    FULL --> TAR["Aurora PostgreSQL target"]
+    CDC --> TAR
+    PS --> TAR
+    TAR --> V["Validate, drain replication lag<br/>Coordinate write pause and cutover"]
+```
+
+### Visual timeline: why full load is not enough
+
+```mermaid
+sequenceDiagram
+    participant App as Production App
+    participant Src as Source DB
+    participant DMS as AWS DMS
+    participant Tgt as Target DB
+    App->>Src: Ongoing writes
+    DMS->>Src: Start full load + CDC
+    Src-->>DMS: Existing data
+    DMS->>Tgt: Full load
+    App->>Src: More inserts / updates
+    Src-->>DMS: Changes from transaction logs
+    DMS->>Tgt: Apply CDC changes
+    Note over Src,Tgt: Monitor lag and validate
+    App->>Src: Pause / coordinate source writes
+    DMS->>Tgt: Apply remaining changes
+    Note over App,Tgt: Switch application to target
+```
+
 
 ### 6.1 Database-level vs server-level migration
 
@@ -464,6 +554,17 @@ References: [Tutorials Dojo DMS](https://tutorialsdojo.com/aws-database-migratio
 
 ## 7. AWS DataSync: online storage transfer
 
+### Visual overview: file transfer with incremental passes
+
+```mermaid
+flowchart LR
+    NAS["On-premises NAS<br/>NFS / SMB files"] --> AG["DataSync agent<br/>When required"]
+    AG --> TASK["DataSync task<br/>Source + destination<br/>Filters + schedule + verification"]
+    TASK --> S3["Amazon S3 / EFS / FSx<br/>Supported destination"]
+    TASK -. "Later runs: new and changed data" .-> NAS
+```
+
+
 ### 7.1 What problem it solves
 
 Suppose you have an NFS share with 80 TB of files:
@@ -550,6 +651,19 @@ References: [Tutorials Dojo DataSync](https://tutorialsdojo.com/aws-datasync/), 
 
 ## 8. AWS Storage Gateway: hybrid access, not simply migration
 
+### Visual overview: DataSync vs Storage Gateway
+
+```mermaid
+flowchart TD
+    subgraph Copy["Migration / copy use case"]
+      NAS["On-prem NFS / SMB data"] --> DS["DataSync<br/>Copy and synchronization tasks"] --> S3["AWS storage destination"]
+    end
+    subgraph Access["Continuing hybrid access use case"]
+      APP["Existing application<br/>NFS / SMB client"] --> FG["S3 File Gateway<br/>File protocol + cache"] --> OBJ["Amazon S3 object storage"]
+    end
+```
+
+
 The recurring difference:
 
 > **DataSync moves data. Storage Gateway presents storage interfaces.**
@@ -590,6 +704,15 @@ Reference: [AWS Storage Gateway docs](https://docs.aws.amazon.com/storagegateway
 ---
 
 ## 9. AWS Transfer Family: legacy file-transfer protocols without managing the server
+
+### Visual overview: protocol preservation
+
+```mermaid
+flowchart LR
+    PARTNER["External partner<br/>Existing SFTP client"] -->|"SFTP (unchanged)"| TF["AWS Transfer Family<br/>Managed file-exchange endpoint"]
+    TF --> STORAGE["S3 / supported EFS storage"]
+```
+
 
 A partner has a hard-coded nightly workflow:
 
@@ -773,6 +896,26 @@ Reference: [Tutorials Dojo — the 7 Rs](https://tutorialsdojo.com/aws-migration
 ---
 
 ## 14. Worked enterprise example: migrating a payments application
+
+### Visual overview: one application, several AWS migration tools
+
+```mermaid
+flowchart TD
+    LB["On-prem load balancer"] --> JAVA["4 Java API VMs"]
+    JAVA --> ORA["Oracle database"]
+    JAVA --> NFS["NFS shared files"]
+    JAVA --> MQ["RabbitMQ broker"]
+    JAVA --> MGN["MGN: rehost Java servers"]
+    ORA --> DMS["Schema conversion + DMS full load / CDC"]
+    NFS --> DS["DataSync: copy data"]
+    MQ --> AMQ["Amazon MQ for RabbitMQ"]
+    MGN --> EC2["EC2 target app servers"]
+    DMS --> AUR["Aurora PostgreSQL"]
+    DS --> EFS["Amazon EFS"]
+    AMQ --> BROKER["Managed RabbitMQ"]
+    EC2 --> ALB["AWS Application Load Balancer<br/>New entry point"]
+```
+
 
 Source architecture:
 
